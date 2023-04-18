@@ -4,54 +4,78 @@
 # Description: Interpret for IPPcode23 - core module
 
 
-import re
 import argparse
-import xml.etree.ElementTree as ET 
-
-import util
-import error_codes
+from interpret_library.XML_parser import *
+import os
 
 
-err = error_codes.ErrorCodes()
-instructions = []
-# Check arguments 
-ap = argparse.ArgumentParser()
-ap.add_argument("--source", required=False, type=argparse.FileType('r'), help="Source file with XML code")
-ap.add_argument("--input", required=False, type=argparse.FileType('r'), help="Input file with actual input")
-args = vars(ap.parse_args())
+class Interpret:
+    def __init__(self):
+        self.__frame_stack = Frame()
+        self.__instructionList = []
+        self.__stack = []
+        self.__flow_manager = FlowManager()
 
-if not (args["source"] and args["input"]):
-    print("Error: Missing arguments")
-    exit(err.badParameter)
+        # Parse arguments
+        self.__parse_args()
 
-#TODO: Check if whether source or input is missing, if so, use stdin/stdout
+    def __parse_args(self):
+        # Check arguments
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--source", required=False, type=argparse.FileType('r'), help="Source file with XML code")
+        ap.add_argument("--input", required=False, type=argparse.FileType('r'), help="Input file with actual input")
+        self.args = vars(ap.parse_args())
+        #print(self.args['source'])
 
-tree = ET.parse(args["source"])
-root = tree.getroot()
+        if self.args["source"] and self.args["input"]:
+            if not os.path.isfile(self.args["source"].name):
+                error("Source file error", ErrorCodes.inFileError)
+            if not os.path.isfile(self.args["input"].name):
+                error("Input file error", ErrorCodes.inFileError)
+        else:
+            if self.args["source"] is None and self.args["input"]:
+                self.args["source"] = 'sys.stdin'
+                try:
+                    sys.stdin = open(self.args["input"], 'r')
+                except IOError:
+                    error("Error opening input file", ErrorCodes.inFileError)
 
-if root.tag != "program":
-    print("Error: Root tag is not program")
-    exit(err.xmlError)
-for child in root:
-    if child.tag != "instruction":
-        print("Error: Root tag is not program")
-        exit(err.xmlError)
-    ca = list(child.attrib.keys())
-    if not ('order' in ca and 'opcode' in ca):
-        print("Error: Missing order or opcode attribute")
-        exit(err.xmlError)
-    for subchild in child:
-        if not(re.match ("arg[1-3]", subchild.tag)):
-            print("Error: Unknown tag")
-            exit(err.xmlError)
-    
+            elif self.args["input"] is None and self.args["source"]:
+                self.args["input"] = 'sys.stdin'
+            else:
+                error("File error", ErrorCodes.inFileError)
 
-# instructions in root by order 
-print(root[0].attrib["order"])
-for e in root:
-    inst = util.Instruction(e.attrib["opcode"], e.attrib["order"])
-    for sub in e:
-        inst.add_arg(util.Arg(sub.attrib["type"], sub.text))
-    instructions.append(inst)
-print(instructions)
-print("success")
+    def run(self):
+        self.__parse_args()
+        xml = XMLParser(self.__frame_stack,
+                        self.__flow_manager,
+                        self.args["source"] if self.args["source"] != 'sys.stdin' else sys.stdin,
+                        self.__stack)
+        xml.parse()
+        self.__instructionList = xml.instructions_list
+        self.get_labels()
+        self.exec()
+
+    def get_labels(self):
+
+        for inst in self.__instructionList:
+            if isinstance(inst, LABEL):
+                inst.exec()
+                self.__instructionList[self.__flow_manager.instruction_counter] = NOP(inst.args[0].value,
+                                                                                      inst.order,
+                                                                                      [],
+                                                                                      self.__frame_stack,
+                                                                                      self.__flow_manager,
+                                                                                      self.__stack)
+            self.__flow_manager.instruction_counter += 1
+        self.__flow_manager.instruction_counter = 0
+
+    def exec(self):
+        while True:
+            instruction = self.__instructionList[self.__flow_manager.instruction_counter]
+            if instruction is None:
+                break
+
+            instruction.exec()
+            self.__flow_manager.instruction_counter += 1
+

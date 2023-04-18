@@ -3,5 +3,8 @@
 # Date: 28.3.2023 - xx.xx.xxxx
 # Description: Interpret for IPPcode23
 
+from interpret_library.core import Interpret
 if __name__ == "__main__":
-    print("Interpret")
+    interpret = Interpret()
+    interpret.run()
+

@@ -1,4 +1,8 @@
-class ErrorCodes():
+import sys
+from datetime import datetime
+
+
+class ErrorCodes:
     badParameter = 10
     inFileError = 11
     outFileError = 12
@@ -11,3 +15,12 @@ class ErrorCodes():
     missingValueError = 56
     badOperandError = 57
     badStringError = 58
+
+def error(message, code):
+    sys.stderr.write(f"({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}): Error: {message}")
+    sys.exit(code)
+
+
+def log(message):
+    sys.stderr.write(f"({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}): {message}")
+
