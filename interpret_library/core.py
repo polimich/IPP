@@ -10,6 +10,7 @@ import os
 
 
 class Interpret:
+    """ Main class for interpret.py"""
     def __init__(self):
         self.__frame_stack = Frame()
         self.__instructionList = []
@@ -20,23 +21,26 @@ class Interpret:
         self.__parse_args()
 
     def __parse_args(self):
-        # Check arguments
+        """ Parses arguments from command line"""
         ap = argparse.ArgumentParser()
         ap.add_argument("--source", required=False, type=argparse.FileType('r'), help="Source file with XML code")
         ap.add_argument("--input", required=False, type=argparse.FileType('r'), help="Input file with actual input")
         self.args = vars(ap.parse_args())
-        #print(self.args['source'])
 
         if self.args["source"] and self.args["input"]:
             if not os.path.isfile(self.args["source"].name):
                 error("Source file error", ErrorCodes.inFileError)
             if not os.path.isfile(self.args["input"].name):
                 error("Input file error", ErrorCodes.inFileError)
+            try:
+                sys.stdin = open(self.args["input"].name, 'r')
+            except IOError:
+                error("Error opening input file", ErrorCodes.inFileError)
         else:
             if self.args["source"] is None and self.args["input"]:
                 self.args["source"] = 'sys.stdin'
                 try:
-                    sys.stdin = open(self.args["input"], 'r')
+                    sys.stdin = open(self.args["input"].name, 'r')
                 except IOError:
                     error("Error opening input file", ErrorCodes.inFileError)
 
@@ -46,7 +50,7 @@ class Interpret:
                 error("File error", ErrorCodes.inFileError)
 
     def run(self):
-        self.__parse_args()
+        """ Runs interpret"""
         xml = XMLParser(self.__frame_stack,
                         self.__flow_manager,
                         self.args["source"] if self.args["source"] != 'sys.stdin' else sys.stdin,
@@ -57,25 +61,25 @@ class Interpret:
         self.exec()
 
     def get_labels(self):
-
+        """ Gets all labels from instruction list and substitutes them with LABEL_SUBSTITUTE"""
         for inst in self.__instructionList:
             if isinstance(inst, LABEL):
                 inst.exec()
-                self.__instructionList[self.__flow_manager.instruction_counter] = NOP(inst.args[0].value,
-                                                                                      inst.order,
-                                                                                      [],
-                                                                                      self.__frame_stack,
-                                                                                      self.__flow_manager,
-                                                                                      self.__stack)
+                self.__instructionList[self.__flow_manager.instruction_counter] = LABEL_SUBSTITUTE(inst.args[0].value,
+                                                                                                   inst.order,
+                                                                                                   [],
+                                                                                                   self.__frame_stack,
+                                                                                                   self.__flow_manager,
+                                                                                                   self.__stack)
             self.__flow_manager.instruction_counter += 1
         self.__flow_manager.instruction_counter = 0
 
     def exec(self):
+        """ Executes all instructions"""
         while True:
             instruction = self.__instructionList[self.__flow_manager.instruction_counter]
             if instruction is None:
                 break
-
             instruction.exec()
             self.__flow_manager.instruction_counter += 1
 

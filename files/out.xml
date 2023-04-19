@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="IPPcode23">
+ <instruction order="1" opcode="CREATEFRAME"/>
+ <instruction order="2" opcode="POPFRAME"/>
+ <instruction order="3" opcode="BREAK"/>
+ <instruction order="4" opcode="RETURN"/>
+ <instruction order="5" opcode="BREAK"/>
+ <instruction order="6" opcode="RETURN"/>
+ <instruction order="7" opcode="DEFVAR">
+  <arg1 type="var">GF@$_counter</arg1>
+ </instruction>
+ <instruction order="8" opcode="MOVE">
+  <arg1 type="var">GF@counter</arg1>
+  <arg2 type="string"></arg2>
+ </instruction>
+ <instruction order="9" opcode="LABEL">
+  <arg1 type="label">while</arg1>
+ </instruction>
+ <instruction order="10" opcode="JUMPIFEQ">
+  <arg1 type="label">end</arg1>
+  <arg2 type="var">GF@counter</arg2>
+  <arg3 type="string">aaa</arg3>
+ </instruction>
+ <instruction order="11" opcode="WRITE">
+  <arg1 type="string">Proměnná\032GF</arg1>
+ </instruction>
+ <instruction order="12" opcode="WRITE">
+  <arg1 type="var">GF@counter</arg1>
+ </instruction>
+ <instruction order="13" opcode="WRITE">
+  <arg1 type="string">\010</arg1>
+ </instruction>
+ <instruction order="14" opcode="CONCAT">
+  <arg1 type="var">GF@counter</arg1>
+  <arg2 type="var">GF@counter</arg2>
+  <arg3 type="string">a</arg3>
+ </instruction>
+ <instruction order="15" opcode="JUMP">
+  <arg1 type="label">while</arg1>
+ </instruction>
+ <instruction order="16" opcode="LABEL">
+  <arg1 type="label">end</arg1>
+ </instruction>
+</program>
